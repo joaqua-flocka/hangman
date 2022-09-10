@@ -6,7 +6,7 @@ word_list = word_list.select { |word| word.length.between?(5, 12)}
 secret_word = word_list[rand(word_list.length)].split('')
 
 class Player
-  attr_reader :correct_guess_array, :lives, :save, :saves, :secret_word
+  attr_reader :correct_guess_array, :lives, :save, :secret_word
   @@saves = 0
   def initialize(word, lives, incorrect_guesses = [], save = false, correct_guess_array = nil)
     if correct_guess_array.nil?
@@ -18,6 +18,7 @@ class Player
     @lives = lives
     @incorrect_guesses = incorrect_guesses
     @save = save
+    @@saves = Dir.children('saved_games').length
   end
 
   def check_guess(guess)
@@ -71,8 +72,20 @@ class Player
       @save = true
       @@saves += 1
     end
-    puts "#{@lives} lives left!"
+    puts "#{@lives} lives left!\n"
     puts "Incorrect guesses: #{@incorrect_guesses}" unless @incorrect_guesses.empty?
+  end
+end
+
+def end_game(player)
+  if player.save
+    filename = "saved_games/save_game_#{Player.saves}.json"
+    File.open(filename, 'w') do |file|
+      file.puts player.to_json
+      puts "\nGame saved to #{filename}"
+    end
+  else
+    player.lives == 0 ? puts("You lose!\nCorrect word: #{player.secret_word.join}") : puts("You win!")
   end
 end
 
@@ -88,18 +101,23 @@ if choice == 1
 
   end
 
-
-  if me.save
-    File.open("save_game.json", 'w') do |file|
-      file.puts me.to_json
-    end
-  else
-    me.lives == 0 ? puts("You lose!\nCorrect word: #{me.secret_word.join}") : puts("You win!")
-  end
+  end_game(me)
 
 elsif choice == 2
-  serialized = File.read("save_game.json")
+
+  saved_games = Dir.children('saved_games')
+  puts "Which game would you like to load?\n"
+  saved_games.each_with_index do |game, idx|
+    puts "[#{idx + 1}]\t#{game}"
+  end
+
+  choice = gets.chomp.to_i - 1
+
+  filename = 'saved_games/' + saved_games[choice]
+  serialized = File.read(filename)
   me = Player.from_json(serialized)
+
+  puts Player.saves
 
   until me.correct_guess_array.join == me.secret_word.join || me.lives == 0 || me.save
 
@@ -107,12 +125,11 @@ elsif choice == 2
     #binding.pry
   end
 
+  end_game(me)
 
-  if me.save
-    File.open("save_game.json", 'w') do |file|
-      file.puts me.to_json
-    end
-  else
-    me.lives == 0 ? puts("You lose!\nCorrect word: #{me.secret_word.join}") : puts("You win!")
-  end
+  puts "Would you like to delete this save file?\n[1] - Yes, delete save\n[2] - No\n"
+  choice = gets.chomp.to_i
+
+  File.delete(filename) if choice == 1
+  
 end
