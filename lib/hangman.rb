@@ -107,7 +107,7 @@ elsif choice == 2
     #binding.pry
   end
 
-  
+
   if me.save
     File.open("save_game.json", 'w') do |file|
       file.puts me.to_json
