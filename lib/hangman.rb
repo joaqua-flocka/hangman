@@ -1,5 +1,4 @@
 require 'json'
-require 'pry-byebug'
 
 word_list = File.read('wordlist.txt').split
 word_list = word_list.select { |word| word.length.between?(5, 12)}
